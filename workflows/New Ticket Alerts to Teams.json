@@ -1,0 +1,277 @@
+{
+  "active": false,
+  "connections": {
+    "Query Database": {
+      "main": [
+        [
+          {
+            "node": "Filter Out Tickets that have already been sent",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Get New Tickets": {
+      "main": [
+        [
+          {
+            "node": "Query Database",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Add Filterable Parameter",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get New Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine like Companies": {
+      "main": [
+        [
+          {
+            "node": "Teams to Dispatch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Filterable Parameter": {
+      "main": [
+        [
+          {
+            "node": "Filter Out Tickets that have already been sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Out Tickets that have already been sent": {
+      "main": [
+        [
+          {
+            "node": "Combine like Companies",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Log in Redis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get New Tickets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "createdAt": "2025-08-07T09:10:23.524Z",
+  "id": "KvXsfrZe9zAq38hc",
+  "isArchived": false,
+  "meta": null,
+  "name": "New Ticket Alerts to Teams",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/1 8-16 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "626fd092-2be2-410a-a85f-bde9c09d94a5",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "position": [
+        -576,
+        80
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const item of $input.all()) {\n  // Assuming 'id' is the field with the Connectwise Ticket ID\n  // Convert 'id' to a string to ensure it has quotes in the JSON output\n  item.json.id = item.json.id.toString();\n\n  // If 'filterOnThis' is another field you want to set with the id as a string\n  item.json.FilterOnThis = item.json.id;\n\n  // ... any other operations you want to perform on each item\n}\n\nreturn $input.all();"
+      },
+      "id": "9e272b78-50d5-4087-b8f4-df601115e3ce",
+      "name": "Add Filterable Parameter",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        0,
+        0
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "=Tickets",
+        "key": "={{ $json.id.toString() }}",
+        "keyType": "string",
+        "options": {}
+      },
+      "id": "003a9006-5094-4482-96b4-26474f66ae8e",
+      "name": "Query Database",
+      "type": "n8n-nodes-base.redis",
+      "position": [
+        0,
+        160
+      ],
+      "typeVersion": 1,
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "FilterOnThis",
+              "field2": "Tickets"
+            }
+          ]
+        },
+        "joinMode": "keepNonMatches",
+        "outputDataFrom": "input1",
+        "options": {
+          "fuzzyCompare": true
+        }
+      },
+      "id": "245ca742-48f2-4d68-9807-9d8ea46e8fd2",
+      "name": "Filter Out Tickets that have already been sent",
+      "type": "n8n-nodes-base.merge",
+      "position": [
+        320,
+        80
+      ],
+      "typeVersion": 2.1
+    },
+    {
+      "parameters": {
+        "url": "https://na.myconnectwise.net/v4_6_release/apis/3.0/service/tickets?conditions=(status/name=\"New\" or status/name=\"New (email)\" or status/name=\"New (portal)\") and (board/id=25 or board/id=26 or board/id=1 or board/id=28) and parentTicketId=null&PageSize=999",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "clientId",
+              "value": "934a9a6d-480a-4502-ab77-46bd80b368d7"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "837c9586-45bd-4df3-acb3-01549db2d802",
+      "name": "Get New Tickets",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        -288,
+        80
+      ],
+      "typeVersion": 4.1
+    },
+    {
+      "parameters": {
+        "jsCode": "// would need to be adapted to your specific data structure.\nreturn Object.values(items.reduce((accumulator, current) => {\n  const siteName = current.json.siteName; // assuming 'siteName' is the common property\n  const companyName = current.json.company; // replace with the correct path to the company name\n  const ticketType = current.json.recordType; // replace with the correct path to the ticket type\n\n  // Use a combined key of siteName and companyName to group tickets\n  const groupKey = `${siteName} - ${companyName}`;\n\n  if (!accumulator[groupKey]) {\n    accumulator[groupKey] = {\n      siteName,\n      companyName,\n      ticketType,\n      tickets: []\n    };\n  }\n\n  // Create a string that combines the ticket number and summary with a <br> for HTML line breaks\n  const ticketInfo = `${current.json.id}: ${current.json.summary}<br>`;\n  accumulator[groupKey].tickets.push(ticketInfo);\n\n  // If ticketType is not consistent within the same groupKey, handle accordingly\n  if (!accumulator[groupKey].ticketType) {\n    accumulator[groupKey].ticketType = ticketType;\n  } else if (accumulator[groupKey].ticketType !== ticketType) {\n    // Handle the case where different ticket types exist within the same groupKey\n    accumulator[groupKey].ticketType += `, ${ticketType}`;\n  }\n\n  return accumulator;\n}, {})).map(group => {\n  // Join the tickets array into a single string, separating each ticket with an empty string (effectively nothing)\n  const ticketsString = group.tickets.join('');\n\n  // Return the final object structure, with each property as needed\n  return {\n    siteName: group.siteName,\n    companyName: group.companyName,\n    ticketType: group.ticketType,\n    tickets: ticketsString // This is now a single string with <br> as separators\n  };\n});\n"
+      },
+      "id": "c9482838-b4f4-4f8b-a3a3-8b5045c75e05",
+      "name": "Combine like Companies",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        592,
+        160
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "resource": "chatMessage",
+        "chatId": "19:3a9ec7df-5b99-4311-9a78-61ac2192da07_449d57c9-64d0-496f-ad07-147a6b388a32@unq.gbl.spaces",
+        "messageType": "html",
+        "message": "=Hey Dispatch Team!, A new {{ $json.ticketType }} has come in.<br><br> <strong>Ticket:</strong> {{ $json.tickets }} <strong>Company: </strong> {{ $json.companyName.name }}",
+        "options": {}
+      },
+      "id": "5df9f0ef-c7db-483a-80e9-af3e702d8084",
+      "name": "Teams to Dispatch",
+      "type": "n8n-nodes-base.microsoftTeams",
+      "position": [
+        864,
+        80
+      ],
+      "typeVersion": 1.1
+    },
+    {
+      "parameters": {
+        "operation": "set",
+        "key": "={{ $json.id }}",
+        "value": "={{ $json.id }}"
+      },
+      "id": "756ea0cb-568b-4407-8ed8-c0e2dd617834",
+      "name": "Log in Redis",
+      "type": "n8n-nodes-base.redis",
+      "position": [
+        592,
+        0
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -576,
+        -80
+      ],
+      "id": "61562130-1549-41f9-a547-24dd756ad0e9",
+      "name": "On clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        224,
+        288
+      ],
+      "typeVersion": 1,
+      "id": "04428e9c-322b-48fd-9d35-728f4bb73174",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-08-07T10:30:46.000Z",
+  "versionId": "f0d29c2d-b3dc-4e4d-bb8d-402a6cfd06d4"
+}
