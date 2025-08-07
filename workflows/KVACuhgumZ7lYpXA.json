@@ -1,5 +1,5 @@
 {
-  "active": false,
+  "active": true,
   "connections": {
     "When chat message received": {
       "main": [
@@ -128,7 +128,7 @@
   },
   "staticData": null,
   "tags": [],
-  "triggerCount": 0,
-  "updatedAt": "2025-08-07T07:51:59.000Z",
+  "triggerCount": 1,
+  "updatedAt": "2025-08-07T08:23:49.000Z",
   "versionId": "696bd095-b32f-4192-b337-688ffe640f6d"
 }
