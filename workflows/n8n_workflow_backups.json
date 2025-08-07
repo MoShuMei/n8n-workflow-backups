@@ -506,7 +506,7 @@
           "mode": "name",
           "value": "={{ $('Globals').item.json.repo.name }}"
         },
-        "filePath": "={{ $('Globals').item.json.repo.path }}{{$('Execute Workflow Trigger').first().json.id}}.json",
+        "filePath": "={{ $('Globals').item.json.repo.path }}{{$('Execute Workflow Trigger').first().json.name}}.json",
         "fileContent": "={{$('isDiffOrNew').item.json[\"n8n_data_stringy\"]}}",
         "commitMessage": "={{$('Execute Workflow Trigger').first().json.name}} ({{$json.github_status}})"
       },
@@ -604,7 +604,7 @@
           "mode": "name",
           "value": "={{ $json.repo.name }}"
         },
-        "filePath": "={{ $json.repo.path }}{{ $('Execute Workflow Trigger').item.json.id }}.json",
+        "filePath": "={{ $json.repo.path }}{{ $('Execute Workflow Trigger').item.json.name }}.json",
         "asBinaryProperty": false,
         "additionalParameters": {}
       },
@@ -838,6 +838,6 @@
   },
   "tags": [],
   "triggerCount": 1,
-  "updatedAt": "2025-08-07T08:37:51.000Z",
-  "versionId": "051ecd87-7ed4-474a-888e-ed7db139261f"
+  "updatedAt": "2025-08-07T09:07:46.000Z",
+  "versionId": "f697dcb1-2dfd-4d35-acd1-69df03b4a686"
 }
