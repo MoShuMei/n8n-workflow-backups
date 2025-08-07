@@ -273,7 +273,8 @@
         448,
         272
       ],
-      "typeVersion": 1
+      "typeVersion": 1,
+      "notesInFlow": false
     },
     {
       "parameters": {
@@ -543,8 +544,7 @@
         "rule": {
           "interval": [
             {
-              "field": "seconds",
-              "secondsInterval": 2
+              "triggerAtHour": 7
             }
           ]
         }
@@ -845,6 +845,6 @@
     }
   ],
   "triggerCount": 1,
-  "updatedAt": "2025-08-07T08:21:09.000Z",
-  "versionId": "a39f47db-7d9a-4fe6-9ddf-d3d9470d6e54"
+  "updatedAt": "2025-08-07T08:32:51.000Z",
+  "versionId": "7db36d57-d1bd-48d5-ae69-49d247c24287"
 }
